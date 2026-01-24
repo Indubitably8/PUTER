@@ -10,5 +10,7 @@ class CommandRunner {
     return (result.stdout as String).trim();
   }
 
-
+  static Future<Process> bashProcess(String cmd, [List<String> args = const []]) async {
+    return await Process.start(cmd, args);
+  }
 }

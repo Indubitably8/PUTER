@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:puter_interface/music/music_player.dart';
+import 'package:puter_interface/system/music/music_player.dart';
 import 'package:puter_interface/music/music_player_ui.dart';
 
 void main() {

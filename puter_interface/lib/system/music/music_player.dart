@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:puter_interface/system/command_runner.dart';
 
 class MusicPlayer {
@@ -22,6 +24,18 @@ class MusicPlayer {
   static Future<void> initSpotifyd() =>
       CommandRunner.bash('spotifyd', ['--no-daemon']);
 
+  static Future<Process> listenSpotifyd() => CommandRunner.bashProcess(
+        'playerctl',
+        [
+          '-p',
+          'spotifyd',
+          'metadata',
+          '--follow',
+          '--format',
+          '{{status}}|{{title}}|{{artist}}|{{album}}|{{mpris:length}}|{{mpris:artUrl}}',
+        ],
+      );
+
   static Future<void> setVolumePercent(int pct) => CommandRunner.bash(
       'pactl', ['set-sink-volume', '@DEFAULT_SINK@', '$pct%']);
 
@@ -32,7 +46,7 @@ class MusicPlayer {
       CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'next']);
 
   static Future<void> prevTrack() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'prev']);
+      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'previous']);
 
   static Future<void> playTrack() =>
       CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'play']);

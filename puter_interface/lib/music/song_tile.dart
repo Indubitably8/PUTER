@@ -27,7 +27,9 @@ class SongTile extends StatelessWidget {
     return CachedNetworkImage(
       imageUrl: np.artUrl,
       placeholder: (_, __) => Image.asset("assets/images/album.jpg"),
-      fadeInDuration: const Duration(milliseconds: 200),
+      errorWidget: (_, __, ___) => Image.asset("assets/images/album.jpg"),
+      fadeInDuration: const Duration(milliseconds: 100),
+      fadeInCurve: Curves.decelerate,
     );
   }
 }

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:puter_interface/app_shell.dart';
 import 'package:puter_interface/home_page.dart';
 import 'package:puter_interface/system/music/music_player.dart';
-import 'package:puter_interface/music/music_player_ui.dart';
 import 'package:puter_interface/themes/dark_blue.dart';
+import 'package:window_manager/window_manager.dart';
 
-void main() {
+Future<void> main() async {
   MusicPlayer.initSpotifyd();
+
+  await windowManager.ensureInitialized();
+
   runApp(const MyApp());
 }
 
@@ -19,7 +23,7 @@ class MyApp extends StatelessWidget {
       title: 'PUTER Interface',
       debugShowCheckedModeBanner: false,
       theme: darkBlue(),
-      home: HomePage(),
+      home: AppShell(child: HomePage()),
     );
   }
 }

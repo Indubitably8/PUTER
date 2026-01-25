@@ -17,8 +17,8 @@ class MusicPlayerUI extends StatefulWidget {
 }
 
 class _MusicPlayerUIState extends State<MusicPlayerUI> {
-  final PlayerctlStream _player = PlayerctlStream();
-  final PositionTicker _ticker = PositionTicker();
+  static final PlayerctlStream _player = PlayerctlStream();
+  static final PositionTicker _ticker = PositionTicker();
 
   @override
   void initState() {
@@ -41,7 +41,9 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
       builder: (context, snapshot) {
         final np = snapshot.data;
 
-        return _musicPlayer(np ?? NowPlaying.empty);
+        return AnimatedContainer(
+            duration: const Duration(milliseconds: 250),
+            child: np != null ? _musicPlayer(np) : null);
       },
     );
   }
@@ -193,16 +195,14 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
         IconButton(
             onPressed: MusicPlayer.prevTrack,
             icon: Icon(Icons.skip_previous_rounded,
-                size: 32,
-                color: colorScheme.onSurface)),
+                size: 32, color: colorScheme.onSurface)),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IconButton(
                 onPressed: MusicPlayer.togglePlay,
                 highlightColor: colorScheme.primary.withAlpha(64),
-                style: IconButton.styleFrom(
-                  backgroundColor: colorScheme.surface
-                ),
+                style:
+                    IconButton.styleFrom(backgroundColor: colorScheme.surface),
                 icon: Icon(
                     np.isPlaying
                         ? Icons.pause
@@ -214,9 +214,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
         IconButton(
             onPressed: MusicPlayer.nextTrack,
             icon: Icon(Icons.skip_next_rounded,
-                size: 32,
-                color:
-                    colorScheme.onSurface)),
+                size: 32, color: colorScheme.onSurface)),
       ],
     );
   }

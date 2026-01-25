@@ -36,14 +36,20 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
 
   @override
   Widget build(BuildContext context) {
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+    final double size =
+        min(mediaQuery.size.width * .4, mediaQuery.size.height * .2) + 176;
+
     return StreamBuilder<NowPlaying>(
       stream: _player.npStream,
       builder: (context, snapshot) {
         final np = snapshot.data;
 
         return AnimatedContainer(
-            duration: const Duration(milliseconds: 250),
-            child: np != null ? _musicPlayer(np) : null);
+          height: np != null ? size : 0,
+          curve: Curves.easeInOut,
+            duration: const Duration(milliseconds: 1000),
+            child: np != null ? SingleChildScrollView(child: _musicPlayer(np)) : const SizedBox.shrink());
       },
     );
   }

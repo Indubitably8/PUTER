@@ -42,17 +42,18 @@ class _HomePageState extends State<HomePage> {
     return Container(
       color: colorScheme.secondaryContainer,
       child: Column(
+        textDirection: TextDirection.rtl,
         mainAxisSize: MainAxisSize.min,
         children: [
           MusicPlayerUI(),
           Container(color: colorScheme.outline, height: 4, width: mediaQuery.size.width),
-          Row(
+          Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
             _navIcon(Icons.multitrack_audio, 0),
             _navIcon(Icons.construction, 1),
             _navIcon(Icons.videogame_asset, 2)
-          ])
+          ]))
         ],
       ),
     );

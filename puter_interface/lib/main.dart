@@ -3,12 +3,9 @@ import 'package:puter_interface/app_shell.dart';
 import 'package:puter_interface/home_page.dart';
 import 'package:puter_interface/system/music/music_player.dart';
 import 'package:puter_interface/themes/dark_blue.dart';
-import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   MusicPlayer.initSpotifyd();
-
-  await windowManager.ensureInitialized();
 
   runApp(const MyApp());
 }

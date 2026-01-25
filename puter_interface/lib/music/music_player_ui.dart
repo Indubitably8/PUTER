@@ -122,9 +122,6 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   }
 
   Widget _controlPanel(NowPlaying np) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
-    final double size = MediaQuery.of(context).size.width;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisSize: MainAxisSize.min,
@@ -143,7 +140,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   Widget _positionSlider(NowPlaying np, Duration position) {
     final Duration? dur = np.duration;
 
-    final bool canSeek = np.canSeek && dur != null && dur.inMilliseconds > 0;
+    final bool canSeek = dur != null && dur.inMilliseconds > 0;
 
     final totalMs = dur?.inMilliseconds ?? 0;
     final posMs = totalMs == 0 ? 0 : position.inMilliseconds.clamp(0, totalMs);
@@ -197,8 +194,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
             onPressed: MusicPlayer.prevTrack,
             icon: Icon(Icons.skip_previous_rounded,
                 size: 32,
-                color: colorScheme.onSurface
-                    .withAlpha(np.canPrevious ? 256 : 128))),
+                color: colorScheme.onSurface)),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IconButton(
@@ -214,14 +210,13 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
                             ? Icons.play_arrow
                             : Icons.cancel_outlined,
                     size: 40,
-                    color: colorScheme.onSurface
-                        .withAlpha(np.canPlay ? 256 : 128)))),
+                    color: colorScheme.onSurface))),
         IconButton(
             onPressed: MusicPlayer.nextTrack,
             icon: Icon(Icons.skip_next_rounded,
                 size: 32,
                 color:
-                    colorScheme.onSurface.withAlpha(np.canNext ? 256 : 128))),
+                    colorScheme.onSurface)),
       ],
     );
   }

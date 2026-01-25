@@ -17,7 +17,7 @@ class PlayerctlStream {
     await stop();
 
     const format =
-        '{{status}}|{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}|{{mpris:length}}|{{shuffle}}|{{loop}}|{{volume}}|{{canplay}}|{{canpause}}|{{cannext}}|{{canprevious}}|{{canseek}}|{{xesam:url}}';
+        '{{status}}|{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}|{{mpris:length}}|{{shuffle}}|{{loop}}|{{volume}}|{{xesam:url}}';
 
     _proc = await Process.start(
       'playerctl',
@@ -76,13 +76,7 @@ class PlayerctlStream {
 
     final volume = double.tryParse(parts[8].trim()) ?? 1.0;
 
-    final canPlay = _parseBool(parts[9]);
-    final canPause = _parseBool(parts[10]);
-    final canNext = _parseBool(parts[11]);
-    final canPrevious = _parseBool(parts[12]);
-    final canSeek = _parseBool(parts[13]);
-
-    final uri = parts[14].trim();
+    final uri = parts[9].trim();
 
     return NowPlaying(
       status: status,
@@ -93,11 +87,6 @@ class PlayerctlStream {
       duration: duration,
       shuffle: shuffle,
       loopMode: loopMode,
-      canPlay: canPlay,
-      canPause: canPause,
-      canNext: canNext,
-      canPrevious: canPrevious,
-      canSeek: canSeek,
       volume: volume,
       uri: uri,
     );

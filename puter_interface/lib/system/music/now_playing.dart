@@ -11,11 +11,6 @@ class NowPlaying {
     required this.duration,
     required this.shuffle,
     required this.loopMode,
-    required this.canPlay,
-    required this.canPause,
-    required this.canNext,
-    required this.canPrevious,
-    required this.canSeek,
     required this.volume,
     required this.uri,
   });
@@ -32,12 +27,6 @@ class NowPlaying {
   final bool shuffle;
   final LoopMode loopMode;
 
-  final bool canPlay;
-  final bool canPause;
-  final bool canNext;
-  final bool canPrevious;
-  final bool canSeek;
-
   final double volume;
 
   bool get isPlaying => status == PlaybackStatus.playing;
@@ -53,11 +42,6 @@ class NowPlaying {
     duration: null,
     shuffle: false,
     loopMode: LoopMode.none,
-    canPlay: false,
-    canPause: false,
-    canNext: false,
-    canPrevious: false,
-    canSeek: false,
     volume: 1.0,
     uri: '',
   );

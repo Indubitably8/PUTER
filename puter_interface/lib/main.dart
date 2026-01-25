@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:puter_interface/system/music/music_player.dart';
 import 'package:puter_interface/music/music_player_ui.dart';
+import 'package:puter_interface/themes/dark_blue.dart';
 
 void main() {
   MusicPlayer.initSpotifyd();
@@ -15,7 +16,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PUTER Interface',
-      home: const MusicPlayerUI(),
+      debugShowCheckedModeBanner: false,
+      theme: darkBlue(),
+      home: Scaffold(body: const MusicPlayerUI(),),
     );
   }
 }

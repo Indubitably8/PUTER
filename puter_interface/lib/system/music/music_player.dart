@@ -24,18 +24,6 @@ class MusicPlayer {
   static Future<void> initSpotifyd() =>
       CommandRunner.bash('spotifyd', ['--no-daemon']);
 
-  static Future<Process> listenSpotifyd() => CommandRunner.bashProcess(
-        'playerctl',
-        [
-          '-p',
-          'spotifyd',
-          'metadata',
-          '--follow',
-          '--format',
-          '{{status}}|{{title}}|{{artist}}|{{album}}|{{mpris:length}}|{{mpris:artUrl}}',
-        ],
-      );
-
   static Future<void> setVolumePercent(int pct) => CommandRunner.bash(
       'pactl', ['set-sink-volume', '@DEFAULT_SINK@', '$pct%']);
 
@@ -56,4 +44,12 @@ class MusicPlayer {
 
   static Future<void> togglePlay() =>
       CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'play-pause']);
+
+  static Future<void> seekTo(Duration position) async {
+    final double seconds = position.inMilliseconds / 1000.0;
+    await Process.run(
+      'playerctl',
+      ['-p', 'spotifyd', 'position', seconds.toStringAsFixed(2)],
+    );
+  }
 }

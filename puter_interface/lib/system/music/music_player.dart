@@ -1,22 +1,27 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:localstorage/localstorage.dart';
 import 'package:path/path.dart' as p;
-import 'package:puter_interface/system/command_runner.dart';
+
+import '../command.dart';
 
 class MusicPlayer {
   static Future<Map<String, String>> getNowPlaying() async {
-    final raw = await CommandRunner.bash('playerctl', [
-      '-p',
-      'spotifyd',
-      'metadata',
-      '--format',
-      '{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}'
-    ]);
+    final String raw = (await CommandRunner.runResult(
+      'playerctl',
+      args: [
+        '-p',
+        'spotifyd',
+        'metadata',
+        '--format',
+        '{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}'
+      ],
+      timeout: const Duration(seconds: 2),
+    ))
+        .stdout;
 
-    final parts = raw.split('|');
+    final List<String> parts = raw.split('|');
     return {
       'title': parts.isNotEmpty ? parts[0] : '',
       'artist': parts.length > 1 ? parts[1] : '',
@@ -37,35 +42,35 @@ class MusicPlayer {
   }
 
   static String? profile;
+  static List<String> profiles = [];
 
   static Future<void> startSpotifydWithProfile(String profileFileName) async {
-  final String home = Platform.environment['HOME'] ?? '/home/pi';
+    final String home = Platform.environment['HOME'] ?? '/home/pi';
 
-  String fileName = profileFileName.trim();
-  if (!fileName.toLowerCase().endsWith('.conf')) {
-    fileName += '.conf';
+    String fileName = profileFileName.trim();
+    if (!fileName.toLowerCase().endsWith('.conf')) {
+      fileName += '.conf';
+    }
+
+    final String confPath =
+        p.join(home, '.config', 'spotifyd', 'profiles', fileName);
+
+    if (!await File(confPath).exists()) {
+      throw FileSystemException('spotifyd profile not found', confPath);
+    }
+
+    await CommandRunner.runResult('pkill', args: ['-x', 'spotifyd']);
+
+    await Process.start(
+      'spotifyd',
+      ['--config-path', confPath],
+      mode: ProcessStartMode.detached,
+    );
+
+    profile = profileFileName;
   }
 
-  final String confPath =
-      p.join(home, '.config', 'spotifyd', 'profiles', fileName);
-
-  // (Optional but recommended) Fail fast if missing
-  if (!await File(confPath).exists()) {
-    throw FileSystemException('spotifyd profile not found', confPath);
-  }
-
-  await Process.run('pkill', ['-x', 'spotifyd']);
-
-  await Process.start(
-    'spotifyd',
-    ['--config-path', confPath],
-    mode: ProcessStartMode.detached,
-  );
-
-  profile = profileFileName;
-}
-
-  static List<String> profiles = [];
+  static Future<void> stopSpotifyd() => CommandRunner.runResult("pkill", args: ["spotifyd"]);
 
   static Future<List<String>> listSpotifydProfiles() async {
     final String home = Platform.environment['HOME'] ?? '/home/pi';
@@ -73,131 +78,110 @@ class MusicPlayer {
         Directory(p.join(home, '.config', 'spotifyd', 'profiles'));
 
     if (!await profilesDir.exists()) {
+      profiles = [];
       return [];
     }
 
-    final List<String> profiles = [];
+    final List<String> found = [];
     await for (final entity in profilesDir.list(followLinks: false)) {
       if (entity is File) {
         final String name = p.basename(entity.path);
-
         if (name.toLowerCase().endsWith('.conf')) {
-          profiles.add(name.substring(0, name.length - 5));
+          found.add(name.substring(0, name.length - 5));
         }
       }
     }
 
-    profiles.sort();
-    MusicPlayer.profiles = profiles;
-    return profiles;
+    found.sort();
+    profiles = found;
+    return found;
   }
 
   static Future<void> createSpotifydProfile({
-  required String profileName,
-  bool overwrite = false,
-  Duration timeout = const Duration(minutes: 3),
-}) async {
-  final String home = Platform.environment['HOME'] ?? '/home/pi';
+    required String profileName,
+    bool overwrite = false,
+    Duration timeout = const Duration(minutes: 3),
+  }) async {
+    final String home = Platform.environment['HOME'] ?? '/home/pi';
 
-  // Ensure profiles directory exists
-  final Directory profilesDir =
-      Directory(p.join(home, '.config', 'spotifyd', 'profiles'));
-  await profilesDir.create(recursive: true);
+    final Directory profilesDir =
+        Directory(p.join(home, '.config', 'spotifyd', 'profiles'));
+    await profilesDir.create(recursive: true);
 
-  // Normalize and validate filename
-  String fileName = profileName.trim();
-  if (fileName.isEmpty) {
-    throw ArgumentError('profileName is empty');
-  }
-  if (!fileName.toLowerCase().endsWith('.conf')) {
-    fileName += '.conf';
-  }
-  if (fileName.contains('/') || fileName.contains('\\')) {
-    throw ArgumentError('profileName must be a simple name, not a path');
-  }
-
-  final String confPath = p.join(profilesDir.path, fileName);
-  final File confFile = File(confPath);
-
-  if (!overwrite && await confFile.exists()) {
-    throw FileSystemException('Profile already exists', confPath);
-  }
-
-  // Unique per-profile cache_path so OAuth creds are isolated per profile
-  final String profileId = fileName.substring(0, fileName.length - 5);
-  final String cachePath = p.join(home, '.cache', 'spotifyd', profileId);
-
-  // Ensure OAuth directory exists
-  await Directory(p.join(cachePath, 'oauth')).create(recursive: true);
-
-  final File credsFile = File(p.join(cachePath, 'oauth', 'credentials.json'));
-
-  String q(String s) {
-    final escaped = s
-        .replaceAll(r'\', r'\\')
-        .replaceAll('"', r'\"')
-        .replaceAll('\n', r'\n');
-    return '"$escaped"';
-  }
-
-  // Write minimal, stable config
-  final String confText = (StringBuffer()
-    ..writeln('# Generated by PUTER')
-    ..writeln('[global]')
-    ..writeln('device_name = "PUTER"')
-    ..writeln('backend = "pulseaudio"')
-    ..writeln('use_mpris = true')
-    ..writeln('cache_path = ${q(cachePath)}')
-    ..writeln())
-    .toString();
-
-  await confFile.writeAsString(confText, flush: true);
-
-  // If already authenticated for this cache_path, we're done
-  if (await credsFile.exists()) {
-    return;
-  }
-
-  // Stop any running spotifyd instance to avoid conflicts during auth
-  await Process.run('pkill', ['-x', 'spotifyd']);
-
-  // Start OAuth authentication (latest spotifyd)
-  final Process proc = await Process.start(
-    'spotifyd',
-    ['authenticate', '--config-path', confPath],
-    runInShell: true,
-  );
-
-  // Drain stderr to avoid potential buffer backpressure
-  final StreamSubscription<String> errSub = proc.stderr
-      .transform(utf8.decoder)
-      .transform(const LineSplitter())
-      .listen((_) {});
-
-  // Wait until credentials are written
-  final Completer<void> completer = Completer<void>();
-  final Timer pollTimer =
-      Timer.periodic(const Duration(milliseconds: 300), (_) async {
-    if (await credsFile.exists()) {
-      if (!completer.isCompleted) completer.complete();
+    String fileName = profileName.trim();
+    if (fileName.isEmpty) throw ArgumentError('profileName is empty');
+    if (!fileName.toLowerCase().endsWith('.conf')) fileName += '.conf';
+    if (fileName.contains('/') || fileName.contains('\\')) {
+      throw ArgumentError('profileName must be a simple name, not a path');
     }
-  });
 
-  try {
-    await completer.future.timeout(timeout);
-  } on TimeoutException {
-    proc.kill(ProcessSignal.sigterm);
-    throw TimeoutException(
-      'Timed out waiting for Spotify OAuth to complete.',
-      timeout,
+    final String confPath = p.join(profilesDir.path, fileName);
+    final File confFile = File(confPath);
+
+    if (!overwrite && await confFile.exists()) {
+      throw FileSystemException('Profile already exists', confPath);
+    }
+
+    final String profileId = fileName.substring(0, fileName.length - 5);
+    final String cachePath = p.join(home, '.cache', 'spotifyd', profileId);
+
+    await Directory(p.join(cachePath, 'oauth')).create(recursive: true);
+    final File credsFile = File(p.join(cachePath, 'oauth', 'credentials.json'));
+
+    String q(String s) {
+      final escaped = s
+          .replaceAll(r'\', r'\\')
+          .replaceAll('"', r'\"')
+          .replaceAll('\n', r'\n');
+      return '"$escaped"';
+    }
+
+    final String confText = (StringBuffer()
+          ..writeln('# Generated by PUTER')
+          ..writeln('[global]')
+          ..writeln('device_name = "PUTER"')
+          ..writeln('backend = "pulseaudio"')
+          ..writeln('use_mpris = true')
+          ..writeln('cache_path = ${q(cachePath)}')
+          ..writeln())
+        .toString();
+
+    await confFile.writeAsString(confText, flush: true);
+
+    if (await credsFile.exists()) return;
+
+    await CommandRunner.runResult('pkill', args: ['-x', 'spotifyd']);
+
+    final RunningCommand auth = await CommandRunner.startLines(
+      'spotifyd',
+      args: ['authenticate', '--config-path', confPath],
+      runInShell: true,
     );
-  } finally {
-    pollTimer.cancel();
-    await errSub.cancel();
-    proc.kill(ProcessSignal.sigterm);
-  }
-}
 
+    final StreamSubscription<String> errSub = auth.stderrLines.listen((_) {});
+
+    final Completer<void> completer = Completer<void>();
+    final Timer pollTimer =
+        Timer.periodic(const Duration(milliseconds: 300), (_) async {
+      if (await credsFile.exists()) {
+        if (!completer.isCompleted) completer.complete();
+      }
+    });
+
+    try {
+      await completer.future.timeout(timeout);
+    } on TimeoutException {
+      await auth.stop();
+      throw TimeoutException(
+        'Timed out waiting for Spotify OAuth to complete.',
+        timeout,
+      );
+    } finally {
+      pollTimer.cancel();
+      await errSub.cancel();
+      await auth.stop();
+    }
+  }
 
   static Future<void> deleteSpotifydProfile(String profileName) async {
     final String home = Platform.environment['HOME'] ?? '/home/pi';
@@ -208,43 +192,53 @@ class MusicPlayer {
       throw ArgumentError('Invalid profile name');
     }
 
-    final File file = File(
-      p.join(home, '.config', 'spotifyd', 'profiles', name),
-    );
-
+    final File file =
+        File(p.join(home, '.config', 'spotifyd', 'profiles', name));
     if (await file.exists()) await file.delete();
 
-    final profileId = name.substring(0, name.length - 5);
-    final cacheDir = Directory(p.join(home, '.cache', 'spotifyd', profileId));
+    final String profileId = name.substring(0, name.length - 5);
+    final Directory cacheDir =
+        Directory(p.join(home, '.cache', 'spotifyd', profileId));
     if (await cacheDir.exists()) await cacheDir.delete(recursive: true);
   }
 
-  static Future<void> setVolumePercent(int pct) => CommandRunner.bash(
-      'pactl', ['set-sink-volume', '@DEFAULT_SINK@', '$pct%']);
+  static Future<void> setVolumePercent(int pct) => CommandRunner.runResult(
+        'pactl',
+        args: ['set-sink-volume', '@DEFAULT_SINK@', '$pct%'],
+        timeout: const Duration(seconds: 2),
+      );
 
-  static Future<void> toggleMute() => CommandRunner.bash(
-      'pactl', ['set-sink-mute', '@DEFAULT_SINK@', 'toggle']);
+  static Future<void> toggleMute() => CommandRunner.runResult(
+        'pactl',
+        args: ['set-sink-mute', '@DEFAULT_SINK@', 'toggle'],
+        timeout: const Duration(seconds: 2),
+      );
 
   static Future<void> nextTrack() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'next']);
+      CommandRunner.runResult('playerctl', args: ['-p', 'spotifyd', 'next']);
 
-  static Future<void> prevTrack() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'previous']);
+  static Future<void> prevTrack() => CommandRunner.runResult(
+        'playerctl',
+        args: ['-p', 'spotifyd', 'previous'],
+      );
 
   static Future<void> playTrack() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'play']);
+      CommandRunner.runResult('playerctl', args: ['-p', 'spotifyd', 'play']);
 
   static Future<void> pauseTrack() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'pause']);
+      CommandRunner.runResult('playerctl', args: ['-p', 'spotifyd', 'pause']);
 
-  static Future<void> togglePlay() =>
-      CommandRunner.bash('playerctl', ['-p', 'spotifyd', 'play-pause']);
+  static Future<void> togglePlay() => CommandRunner.runResult(
+        'playerctl',
+        args: ['-p', 'spotifyd', 'play-pause'],
+      );
 
   static Future<void> seekTo(Duration position) async {
     final double seconds = position.inMilliseconds / 1000.0;
-    await Process.run(
+    await CommandRunner.runResult(
       'playerctl',
-      ['-p', 'spotifyd', 'position', seconds.toStringAsFixed(2)],
+      args: ['-p', 'spotifyd', 'position', seconds.toStringAsFixed(2)],
+      timeout: const Duration(seconds: 2),
     );
   }
 }

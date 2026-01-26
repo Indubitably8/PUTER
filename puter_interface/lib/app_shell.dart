@@ -1,6 +1,6 @@
 import 'dart:ui' show AppExitResponse;
 import 'package:flutter/widgets.dart';
-import 'package:puter_interface/system/command_runner.dart';
+import 'package:puter_interface/system/music/music_player.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
@@ -34,10 +34,8 @@ class _ExitCleanupState extends State<AppShell> with WidgetsBindingObserver {
     if (!_ran) {
       _ran = true;
       try {
-        await CommandRunner.bash("pkill", ["spotifyd"]);
-      } catch (_) {
-        // don't trap the user in the app because cleanup failed
-      }
+        await MusicPlayer.stopSpotifyd();
+      } catch (_) {}
     }
     return AppExitResponse.exit;
   }

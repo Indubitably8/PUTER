@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:convert';
-import 'dart:io';
 
+import '../command.dart';
 import 'now_playing.dart';
 
 class PlayerctlStream {
-  Process? _proc;
+  RunningCommand? _cmd;
   StreamSubscription<String>? _sub;
   StreamSubscription<String>? _errSub;
 
   final StreamController<NowPlaying?> _npController =
-      StreamController<NowPlaying?>.broadcast();
+  StreamController<NowPlaying?>.broadcast();
   Stream<NowPlaying?> get npStream => _npController.stream;
 
   Timer? _probe;
@@ -33,12 +32,12 @@ class PlayerctlStream {
   Future<void> startNPStream() async {
     await stop();
 
-    const format =
+    const String format =
         '{{status}}|{{title}}|{{artist}}|{{album}}|{{mpris:artUrl}}|{{mpris:length}}|{{shuffle}}|{{loop}}|{{volume}}|{{canplay}}|{{canpause}}|{{cannext}}|{{canprevious}}|{{canseek}}|{{xesam:url}}';
 
-    _proc = await Process.start(
+    _cmd = await CommandRunner.startLines(
       'playerctl',
-      [
+      args: [
         '-p',
         'spotifyd',
         'metadata',
@@ -46,33 +45,27 @@ class PlayerctlStream {
         '--format',
         format,
       ],
-      mode: ProcessStartMode.normal,
     );
 
-    // Periodically probe whether the spotifyd MPRIS player still exists.
-    // This avoids relying on "no updates for N seconds" logic.
     _probe?.cancel();
     _probe = Timer.periodic(const Duration(seconds: 2), (_) async {
-      if (_proc == null) return;
+      if (_cmd == null) return;
 
-      final result = await Process.run(
+      final CommandResult result = await CommandRunner.runResult(
         'playerctl',
-        ['-p', 'spotifyd', 'status'],
-        runInShell: true,
+        args: ['-p', 'spotifyd', 'status'],
+        timeout: const Duration(seconds: 1),
       );
 
-      if (result.exitCode != 0) {
+      if (!result.ok) {
         _emitDisconnectedOnce();
       }
     });
 
-    _sub = _proc!.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen(
-      (line) {
+    _sub = _cmd!.stdoutLines.listen(
+          (line) {
         _markConnected();
-        final np = _parseNowPlayingLine(line);
+        final NowPlaying? np = _parseNowPlayingLine(line);
         if (np != null) _npController.add(np);
       },
       onError: (_) => _emitDisconnectedOnce(),
@@ -80,11 +73,8 @@ class PlayerctlStream {
       cancelOnError: true,
     );
 
-    _errSub = _proc!.stderr
-        .transform(utf8.decoder)
-        .transform(const LineSplitter())
-        .listen((e) {
-      final s = e.toLowerCase();
+    _errSub = _cmd!.stderrLines.listen((e) {
+      final String s = e.toLowerCase();
       if (s.contains('no player') ||
           s.contains('no players') ||
           s.contains('not found')) {
@@ -92,7 +82,7 @@ class PlayerctlStream {
       }
     });
 
-    _proc!.exitCode.then((_) async {
+    _cmd!.exitCode.then((_) async {
       _emitDisconnectedOnce();
 
       _probe?.cancel();
@@ -102,32 +92,32 @@ class PlayerctlStream {
       await _errSub?.cancel();
       _sub = null;
       _errSub = null;
-      _proc = null;
+
+      _cmd = null;
     });
   }
 
   NowPlaying? _parseNowPlayingLine(String line) {
-    final parts = line.split('|');
+    final List<String> parts = line.split('|');
 
-    // Must match the number of fields in `format`.
     if (parts.length < 15) return null;
 
-    final status = _parseStatus(parts[0].trim());
+    final PlaybackStatus status = _parseStatus(parts[0].trim());
 
-    final title = parts[1].trim();
-    final artist = parts[2].trim();
-    final album = parts[3].trim();
-    final artUrl = parts[4].trim();
+    final String title = parts[1].trim();
+    final String artist = parts[2].trim();
+    final String album = parts[3].trim();
+    final String artUrl = parts[4].trim();
 
-    final lengthUs = int.tryParse(parts[5].trim());
-    final duration = lengthUs == null ? null : Duration(microseconds: lengthUs);
+    final int? lengthUs = int.tryParse(parts[5].trim());
+    final Duration? duration = lengthUs == null ? null : Duration(microseconds: lengthUs);
 
-    final shuffle = _parseBool(parts[6]);
-    final loopMode = _parseLoop(parts[7]);
+    final bool shuffle = _parseBool(parts[6]);
+    final LoopMode loopMode = _parseLoop(parts[7]);
 
-    final volume = double.tryParse(parts[8].trim()) ?? 1.0;
+    final double volume = double.tryParse(parts[8].trim()) ?? 1.0;
 
-    final uri = parts[14].trim();
+    final String uri = parts[14].trim();
 
     return NowPlaying(
       status: status,
@@ -184,9 +174,11 @@ class PlayerctlStream {
     _sub = null;
     _errSub = null;
 
-    final p = _proc;
-    _proc = null;
-    if (p != null) p.kill(ProcessSignal.sigterm);
+    final RunningCommand? c = _cmd;
+    _cmd = null;
+    if (c != null) {
+      await c.stop();
+    }
   }
 
   Future<void> dispose() async {

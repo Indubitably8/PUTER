@@ -75,6 +75,7 @@ class MusicPlayer {
     }
 
     profiles.sort();
+    MusicPlayer.profiles = profiles;
     return profiles;
   }
 
@@ -113,6 +114,7 @@ class MusicPlayer {
 
     String formatTomlValue(String s) {
       s = s.trim();
+      print(s);
       if (s == 'true' || s == 'false') return s;
 
       return q(s);
@@ -132,6 +134,7 @@ class MusicPlayer {
       'cache_path',
       'no_audio_cache',
       'audio_format',
+      'use_mpris'
     ];
 
     final Map<String, String> defaultValues = {
@@ -148,11 +151,6 @@ class MusicPlayer {
       final v = values[k];
       if (v == null) continue;
       buffer.writeln('$k = ${formatTomlValue(v)}');
-    }
-
-    for (final entry in values.entries) {
-      if (allowedKeys.contains(entry.key)) continue;
-      buffer.writeln('${entry.key} = ${q(entry.value)}');
     }
 
     buffer.writeln();

@@ -72,6 +72,7 @@ class _MusicPageState extends State<MusicPage> {
           IconButton(
             onPressed: () async {
               await MusicPlayer.deleteSpotifydProfile(name);
+              await MusicPlayer.listSpotifydProfiles();
               if (mounted) setState(() {});
             },
             icon: const Icon(

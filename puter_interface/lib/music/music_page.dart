@@ -97,8 +97,6 @@ class _MusicPageState extends State<MusicPage> {
 
   Future<void> _showAddProfilePopup() async {
     final TextEditingController fileCtrl = TextEditingController();
-    final TextEditingController userCtrl = TextEditingController();
-    final TextEditingController passCtrl = TextEditingController();
 
     await showDialog(
       context: context,
@@ -117,21 +115,6 @@ class _MusicPageState extends State<MusicPage> {
                     labelText: "Name",
                   ),
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: userCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Spotify username",
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: passCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Spotify password",
-                  ),
-                  obscureText: true,
-                ),
               ],
             ),
           ),
@@ -143,20 +126,14 @@ class _MusicPageState extends State<MusicPage> {
             FilledButton(
               onPressed: () async {
                 final String name = fileCtrl.text.trim();
-                final String user = userCtrl.text.trim();
-                final String pass = passCtrl.text.trim();
 
-                if (name.isEmpty || user.isEmpty || pass.isEmpty) return;
+                if (name.isEmpty) return;
 
                 final String fileName =
                 name.endsWith(".conf") ? name : "$name.conf";
 
                 await MusicPlayer.createSpotifydProfile(
                   profileName: fileName,
-                  values: {
-                    "username": user,
-                    "password": pass,
-                  },
                 );
 
                 await MusicPlayer.listSpotifydProfiles();

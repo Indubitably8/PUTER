@@ -9,9 +9,26 @@ class PlayerctlStream {
   StreamSubscription<String>? _sub;
   StreamSubscription<String>? _errSub;
 
-  final StreamController<NowPlaying> _npController =
-  StreamController<NowPlaying>.broadcast();
-  Stream<NowPlaying> get npStream => _npController.stream;
+  final StreamController<NowPlaying?> _npController =
+      StreamController<NowPlaying?>.broadcast();
+  Stream<NowPlaying?> get npStream => _npController.stream;
+
+  Timer? _probe;
+  bool _disconnectEmitted = false;
+
+  void _emitDisconnected() {
+    if (!_npController.isClosed) _npController.add(null);
+  }
+
+  void _emitDisconnectedOnce() {
+    if (_disconnectEmitted) return;
+    _disconnectEmitted = true;
+    _emitDisconnected();
+  }
+
+  void _markConnected() {
+    _disconnectEmitted = false;
+  }
 
   Future<void> startNPStream() async {
     await stop();
@@ -32,20 +49,55 @@ class PlayerctlStream {
       mode: ProcessStartMode.normal,
     );
 
+    // Periodically probe whether the spotifyd MPRIS player still exists.
+    // This avoids relying on "no updates for N seconds" logic.
+    _probe?.cancel();
+    _probe = Timer.periodic(const Duration(seconds: 2), (_) async {
+      if (_proc == null) return;
+
+      final result = await Process.run(
+        'playerctl',
+        ['-p', 'spotifyd', 'status'],
+        runInShell: true,
+      );
+
+      if (result.exitCode != 0) {
+        _emitDisconnectedOnce();
+      }
+    });
+
     _sub = _proc!.stdout
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .listen((line) {
-      final np = _parseNowPlayingLine(line);
-      if (np != null) _npController.add(np);
-    });
+        .listen(
+      (line) {
+        _markConnected();
+        final np = _parseNowPlayingLine(line);
+        if (np != null) _npController.add(np);
+      },
+      onError: (_) => _emitDisconnectedOnce(),
+      onDone: _emitDisconnectedOnce,
+      cancelOnError: true,
+    );
 
     _errSub = _proc!.stderr
         .transform(utf8.decoder)
         .transform(const LineSplitter())
-        .listen((e) => print('playerctl stderr: $e'));
+        .listen((e) {
+      final s = e.toLowerCase();
+      if (s.contains('no player') ||
+          s.contains('no players') ||
+          s.contains('not found')) {
+        _emitDisconnectedOnce();
+      }
+    });
 
     _proc!.exitCode.then((_) async {
+      _emitDisconnectedOnce();
+
+      _probe?.cancel();
+      _probe = null;
+
       await _sub?.cancel();
       await _errSub?.cancel();
       _sub = null;
@@ -68,8 +120,7 @@ class PlayerctlStream {
     final artUrl = parts[4].trim();
 
     final lengthUs = int.tryParse(parts[5].trim());
-    final duration =
-    lengthUs == null ? null : Duration(microseconds: lengthUs);
+    final duration = lengthUs == null ? null : Duration(microseconds: lengthUs);
 
     final shuffle = _parseBool(parts[6]);
     final loopMode = _parseLoop(parts[7]);
@@ -122,6 +173,12 @@ class PlayerctlStream {
   }
 
   Future<void> stop() async {
+    _emitDisconnected();
+
+    _probe?.cancel();
+    _probe = null;
+    _disconnectEmitted = false;
+
     await _sub?.cancel();
     await _errSub?.cancel();
     _sub = null;
@@ -129,9 +186,7 @@ class PlayerctlStream {
 
     final p = _proc;
     _proc = null;
-    if (p != null) {
-      p.kill(ProcessSignal.sigterm);
-    }
+    if (p != null) p.kill(ProcessSignal.sigterm);
   }
 
   Future<void> dispose() async {

@@ -33,16 +33,16 @@ class NowPlaying {
   bool get isPaused => status == PlaybackStatus.paused;
   bool get isStopped => status == PlaybackStatus.stopped;
 
-  static const NowPlaying empty = NowPlaying(
+  static NowPlaying empty() => NowPlaying(
     status: PlaybackStatus.stopped,
-    title: '-----',
+    title: '',
     artist: '',
     album: '',
     artUrl: '',
     duration: null,
     shuffle: false,
     loopMode: LoopMode.none,
-    volume: 1.0,
+    volume: 0.0,
     uri: '',
   );
 }

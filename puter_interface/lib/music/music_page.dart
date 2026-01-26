@@ -22,7 +22,6 @@ class _MusicPageState extends State<MusicPage> {
           }
           return _profileTile(MusicPlayer.profiles[index]);
         },
-
       ),
     );
   }
@@ -130,7 +129,7 @@ class _MusicPageState extends State<MusicPage> {
                 if (name.isEmpty) return;
 
                 final String fileName =
-                name.endsWith(".conf") ? name : "$name.conf";
+                    name.endsWith(".conf") ? name : "$name.conf";
 
                 await MusicPlayer.createSpotifydProfile(
                   profileName: fileName,

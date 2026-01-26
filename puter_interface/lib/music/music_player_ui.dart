@@ -40,7 +40,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
     final double size =
         min(mediaQuery.size.width * .4, mediaQuery.size.height * .2) + 176;
 
-    return StreamBuilder<NowPlaying>(
+    return StreamBuilder<NowPlaying?>(
       stream: _player.npStream,
       builder: (context, snapshot) {
         final np = snapshot.data;

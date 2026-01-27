@@ -28,6 +28,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       body: PageView(
         controller: _controller,
@@ -39,6 +41,7 @@ class _HomePageState extends State<HomePage> {
           GamePage()
         ],
       ),
+      backgroundColor: colorScheme.primaryContainer,
       bottomNavigationBar: _bottomBar(),
     );
   }

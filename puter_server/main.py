@@ -11,7 +11,7 @@ mgr = SerialManager()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup
-    mgr.add_device("light_controller", "/dev/ttyACM0", baud=115200)
+    # mgr.add_device("light_controller", "/dev/ttyACM0", baud=115200)
     print("Serial devices initialized")
 
     yield

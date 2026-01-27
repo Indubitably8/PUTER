@@ -11,7 +11,7 @@ class CreatePage extends StatelessWidget {
       height: 48,
       width: MediaQuery.of(context).size.width * .5,
       child: ElevatedButton(
-          onPressed: () => Server.health(),
+          onPressed: () async => print(await Server.health()),
           child: Text("Test py server")),
     );
   }

@@ -81,7 +81,7 @@ class _ColorPickerState extends State<ColorPicker> {
     Color(0xFFFF80AB), Color(0xFFF8BBD0),
 
     // ---- Pastels / Soft Ambience ----
-    Color(0xFFFFCDD2), Color(0xFFFFE0B2), Color(0xFFFFF9C4),
+    Color(0xFFFFCDD2), Color(0xFFFFF9C4),
     Color(0xFFC8E6C9), Color(0xFFB2DFDB),
     Color(0xFFD1C4E9), Color(0xFFF3E5F5),
   ];

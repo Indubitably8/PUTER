@@ -54,7 +54,6 @@ class _MusicPageState extends State<MusicPage> {
             ),
             ...List<Widget>.generate(MusicPlayer.profiles.length,
                     (i) => _profileTile(MusicPlayer.profiles[i])),
-            _profileTile("John"),
             _addProfileButton()
           ],
         ));

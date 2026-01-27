@@ -27,110 +27,108 @@ class _LightingPageState extends State<LightingPage> {
 
     return Scaffold(
       appBar: AppBar(
-      backgroundColor: colorScheme.tertiaryContainer,
-      centerTitle: true,
-      title: Text("Lighting System",
-          style: TextStyle(
-              fontFamily: "Audiowide",
-              color: colorScheme.onSurface,
-              fontSize: titleTextSize)),
-    ),
+        backgroundColor: colorScheme.tertiaryContainer,
+        centerTitle: true,
+        title: Text("Lighting System",
+            style: TextStyle(
+                fontFamily: "Audiowide",
+                color: colorScheme.onSurface,
+                fontSize: titleTextSize)),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                flex: 1,
-                child: Column(
-                  children: [
-                    const Text(
-                      "Panels",
-                      style: TextStyle(
-                          fontFamily: "Quantico",
-                          fontWeight: FontWeight.w600,
-                          fontSize: titleTextSize),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 1,
+              child: Column(
+                children: [
+                  const Text(
+                    "Panels",
+                    style: TextStyle(
+                        fontFamily: "Quantico",
+                        fontWeight: FontWeight.w600,
+                        fontSize: titleTextSize),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _verticalSlider(
+                        label: "Brightness",
+                        value: panelBrightness,
+                        gradient: const LinearGradient(
+                          colors: [Colors.black, Colors.white],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        onChanged: (v) => setState(() => panelBrightness = v),
+                      ),
+                      _verticalSlider(
+                        label: "Warmth",
+                        value: panelWarmth,
+                        gradient: const LinearGradient(
+                          colors: [
+                            Color(0xFFFFA000), // warm
+                            Color(0xFFFFFFFF), // neutral
+                            Color(0xFF64B5F6), // cool
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        onChanged: (v) => setState(() => panelWarmth = v),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const VerticalDivider(thickness: 2, width: 8),
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  const Text(
+                    "Backlight",
+                    style: TextStyle(
+                        fontFamily: "Quantico",
+                        fontWeight: FontWeight.w600,
+                        fontSize: titleTextSize),
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SizedBox(width: 24),
                         _verticalSlider(
                           label: "Brightness",
-                          value: panelBrightness,
+                          value: backlightBrightness,
                           gradient: const LinearGradient(
                             colors: [Colors.black, Colors.white],
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
-                          onChanged: (v) => setState(() => panelBrightness = v),
+                          onChanged: (v) =>
+                              setState(() => backlightBrightness = v),
                         ),
-                        _verticalSlider(
-                          label: "Warmth",
-                          value: panelWarmth,
-                          gradient: const LinearGradient(
-                            colors: [
-                              Color(0xFFFFA000), // warm
-                              Color(0xFFFFFFFF), // neutral
-                              Color(0xFF64B5F6), // cool
-                            ],
-                            begin: Alignment.centerLeft,
-                            end: Alignment.centerRight,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ColorPicker(
+                            selected: backlightColor,
+                            onChanged: (picked) {
+                              setState(() => backlightColor = picked);
+                            },
                           ),
-                          onChanged: (v) => setState(() => panelWarmth = v),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-
-              const VerticalDivider(thickness: 1, width: 32),
-              Expanded(
-                flex: 2,
-                child: Column(
-                  children: [
-                    const Text(
-                      "Backlight",
-                      style: TextStyle(
-                          fontFamily: "Quantico",
-                          fontWeight: FontWeight.w600,
-                          fontSize: titleTextSize),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _verticalSlider(
-                            label: "Brightness",
-                            value: backlightBrightness,
-                            gradient: const LinearGradient(
-                              colors: [Colors.black, Colors.white],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                            onChanged: (v) =>
-                                setState(() => backlightBrightness = v),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: ColorPicker(
-                              selected: backlightColor,
-                              onChanged: (picked) {
-                                setState(() => backlightColor = picked);
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -155,8 +153,7 @@ class _LightingPageState extends State<LightingPage> {
                 thumbShape: RoundSliderThumbShape(
                   enabledThumbRadius: sliderThumbRadius,
                 ),
-                overlayShape:
-                const RoundSliderOverlayShape(overlayRadius: 18),
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 18),
                 trackShape: GradientTrackShape(gradient),
               ),
               child: Slider(
@@ -167,7 +164,9 @@ class _LightingPageState extends State<LightingPage> {
           ),
         ),
         const SizedBox(height: 8),
-        Text(label, textAlign: TextAlign.center, style: TextStyle(fontFamily: "Cousine", fontSize: buttonTextSize)),
+        Text(label,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: "Cousine", fontSize: buttonTextSize, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -195,17 +194,17 @@ class GradientTrackShape extends SliderTrackShape {
 
   @override
   void paint(
-      PaintingContext context,
-      Offset offset, {
-        required RenderBox parentBox,
-        required SliderThemeData sliderTheme,
-        required Animation<double> enableAnimation,
-        required TextDirection textDirection,
-        required Offset thumbCenter,
-        Offset? secondaryOffset,
-        bool isDiscrete = false,
-        bool isEnabled = false,
-      }) {
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required TextDirection textDirection,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isDiscrete = false,
+    bool isEnabled = false,
+  }) {
     final rect = getPreferredRect(
       parentBox: parentBox,
       offset: offset,

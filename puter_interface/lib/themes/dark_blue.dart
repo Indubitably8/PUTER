@@ -4,6 +4,7 @@ ThemeData darkBlue() {
   const blueHint = Color(0xFF4D7CFF); // subtle accent blue
   const bg = Color(0xFF10161E);       // deep near-black
   const bg2 = Color(0xFF0B0F14);       // deeper near-black
+  const bg3 = Color(0xFF030509);       // deepest near-black
   const surface = Color(0xFF101723);  // dark surface with cool tint
   const surface2 = Color(0xFF131C2A); // slightly brighter surface
   const outline = Color(0xFF233044);  // cool outline
@@ -15,6 +16,7 @@ ThemeData darkBlue() {
     surfaceContainerHighest: surface2,
     primaryContainer: bg,
     secondaryContainer: bg2,
+    tertiaryContainer: bg3,
     outline: outline,
   );
 

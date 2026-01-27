@@ -11,19 +11,53 @@ class MusicPage extends StatefulWidget {
 }
 
 class _MusicPageState extends State<MusicPage> {
+  static const double iconSize = 32;
+
+  static const double titleTextSize = 24;
+  static const double bodyTextSize = 20;
+  static const double buttonTextSize = 20;
+  static const double profileNameTextSize = 32;
+
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      child: ListView.builder(
-        itemCount: MusicPlayer.profiles.length + 1,
-        itemBuilder: (context, index) {
-          if (index == MusicPlayer.profiles.length) {
-            return _addProfileButton();
-          }
-          return _profileTile(MusicPlayer.profiles[index]);
-        },
-      ),
-    );
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+        appBar: AppBar(
+          backgroundColor: colorScheme.tertiaryContainer,
+          centerTitle: true,
+          title: Text("Audio System",
+              style: TextStyle(
+                  fontFamily: "Audiowide",
+                  color: colorScheme.onSurface,
+                  fontSize: titleTextSize)),
+        ),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                  child: Text(
+                    "Profiles",
+                    style: TextStyle(
+                        fontFamily: "Quantico",
+                        fontWeight: FontWeight.w600,
+                        fontSize: titleTextSize),
+                  ),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            ...List<Widget>.generate(MusicPlayer.profiles.length,
+                    (i) => _profileTile(MusicPlayer.profiles[i])),
+            _profileTile("John"),
+            _addProfileButton()
+          ],
+        ));
   }
 
   Widget _profileTile(String name) {
@@ -43,7 +77,10 @@ class _MusicPageState extends State<MusicPage> {
           Expanded(
             child: Text(name,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: colorScheme.onSurface, fontSize: 32)),
+                style: TextStyle(
+                    fontFamily: "Quantico",
+                    color: colorScheme.onSurface,
+                    fontSize: profileNameTextSize)),
           ),
           IconButton(
             onPressed: () async {
@@ -54,7 +91,7 @@ class _MusicPageState extends State<MusicPage> {
               isPlaying
                   ? CupertinoIcons.play_arrow_solid
                   : CupertinoIcons.play_arrow,
-              size: 32,
+              size: iconSize,
             ),
           ),
           IconButton(
@@ -65,7 +102,7 @@ class _MusicPageState extends State<MusicPage> {
             },
             icon: Icon(
               isFav ? CupertinoIcons.star_fill : CupertinoIcons.star,
-              size: 32,
+              size: iconSize,
             ),
           ),
           IconButton(
@@ -74,9 +111,9 @@ class _MusicPageState extends State<MusicPage> {
               await MusicPlayer.listSpotifydProfiles();
               if (mounted) setState(() {});
             },
-            icon: const Icon(
+            icon: Icon(
               CupertinoIcons.trash,
-              size: 32,
+              size: iconSize,
             ),
           ),
         ],
@@ -85,11 +122,20 @@ class _MusicPageState extends State<MusicPage> {
   }
 
   Widget _addProfileButton() {
-    return Padding(
+    final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    final MediaQueryData mediaQuery = MediaQuery.of(context);
+
+    return Container(
       padding: const EdgeInsets.all(24),
+      width: mediaQuery.size.width,
       child: CupertinoButton.filled(
         onPressed: _showAddProfilePopup,
-        child: const Text("Add Profile"),
+        child: Text("Add Profile",
+            style: TextStyle(
+                fontFamily: "Cousine",
+                fontSize: buttonTextSize,
+                color: colorScheme.onPrimary,
+                fontWeight: FontWeight.w500)),
       ),
     );
   }
@@ -102,7 +148,9 @@ class _MusicPageState extends State<MusicPage> {
       barrierDismissible: true,
       builder: (context) {
         return AlertDialog(
-          title: const Text("New Profile"),
+          title: Text("New Profile",
+              style: TextStyle(
+                  fontFamily: "Orbitron", fontSize: titleTextSize)),
           content: SizedBox(
             width: 420,
             child: Column(
@@ -110,9 +158,12 @@ class _MusicPageState extends State<MusicPage> {
               children: [
                 TextField(
                   controller: fileCtrl,
-                  decoration: const InputDecoration(
-                    labelText: "Name",
-                  ),
+                  style:
+                  TextStyle(fontFamily: "Cousine", fontSize: bodyTextSize),
+                  decoration: InputDecoration(
+                      labelText: "Name",
+                      labelStyle: TextStyle(
+                          fontFamily: "Cousine", fontSize: bodyTextSize)),
                 ),
               ],
             ),
@@ -120,7 +171,11 @@ class _MusicPageState extends State<MusicPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
+              child: Text("Cancel",
+                  style: TextStyle(
+                      fontFamily: "Cousine",
+                      fontWeight: FontWeight.w600,
+                      fontSize: bodyTextSize)),
             ),
             FilledButton(
               onPressed: () async {
@@ -129,7 +184,7 @@ class _MusicPageState extends State<MusicPage> {
                 if (name.isEmpty) return;
 
                 final String fileName =
-                    name.endsWith(".conf") ? name : "$name.conf";
+                name.endsWith(".conf") ? name : "$name.conf";
 
                 await MusicPlayer.createSpotifydProfile(
                   profileName: fileName,
@@ -140,7 +195,11 @@ class _MusicPageState extends State<MusicPage> {
                 if (mounted) setState(() {});
                 if (context.mounted) Navigator.pop(context);
               },
-              child: const Text("Create"),
+              child: Text("Create",
+                  style: TextStyle(
+                      fontFamily: "Cousine",
+                      fontWeight: FontWeight.w600,
+                      fontSize: bodyTextSize)),
             ),
           ],
         );

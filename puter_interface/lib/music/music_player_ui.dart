@@ -17,6 +17,13 @@ class MusicPlayerUI extends StatefulWidget {
 }
 
 class _MusicPlayerUIState extends State<MusicPlayerUI> {
+
+  static const Size albumratio = Size(.4, .15);
+  static const double iconSize = 40;
+  static const double textSize = 28;
+  static const double buttonSize = 40;
+  static const double buttonTextSize = 16;
+
   static final PlayerctlStream _player = PlayerctlStream();
   static final PositionTicker _ticker = PositionTicker();
 
@@ -38,7 +45,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * .4, mediaQuery.size.height * .2) + 176;
+        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height) + 176;
 
     return StreamBuilder<NowPlaying?>(
       stream: _player.npStream,
@@ -67,7 +74,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * .4, mediaQuery.size.height * .2);
+        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
 
     return Container(
         decoration: BoxDecoration(
@@ -98,14 +105,15 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
 
     return Row(
       children: [
-        Icon(icon, color: colorScheme.primary, size: 32),
+        Icon(icon, color: colorScheme.primary, size: iconSize),
         const SizedBox(width: 8),
         Expanded(
             child: Text(text,
                 textAlign: TextAlign.start,
                 style: TextStyle(
                     color: colorScheme.onSurface,
-                    fontSize: 24,
+                    fontSize: textSize,
+                    fontFamily: "Audiowide",
                     overflow: TextOverflow.ellipsis)))
       ],
     );
@@ -114,7 +122,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   Widget _albumCover(NowPlaying np) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * .4, mediaQuery.size.height * .2);
+        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -143,7 +151,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   }
 
   bool _isDragging = false;
-  double _dragValue = 0.0; // 0..1
+  double _dragValue = 0.0;
 
   Widget _positionSlider(NowPlaying np, Duration position) {
     final Duration? dur = np.duration;
@@ -181,10 +189,10 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(position.formatTime(),
-                  style: Theme.of(context).textTheme.bodySmall),
+                  style: TextStyle(fontFamily: "Cousine", fontSize: buttonTextSize)),
               _playSettings(np),
               Text((dur ?? Duration.zero).formatTime(),
-                  style: Theme.of(context).textTheme.bodySmall),
+                  style: TextStyle(fontFamily: "Cousine", fontSize: buttonTextSize)),
             ],
           ),
         ],
@@ -201,7 +209,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
         IconButton(
             onPressed: MusicPlayer.prevTrack,
             icon: Icon(Icons.skip_previous_rounded,
-                size: 32, color: colorScheme.onSurface)),
+                size: buttonSize * .8, color: colorScheme.onSurface)),
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: IconButton(
@@ -215,12 +223,12 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
                         : np.isPaused
                             ? Icons.play_arrow
                             : Icons.cancel_outlined,
-                    size: 40,
+                    size: buttonSize,
                     color: colorScheme.onSurface))),
         IconButton(
             onPressed: MusicPlayer.nextTrack,
             icon: Icon(Icons.skip_next_rounded,
-                size: 32, color: colorScheme.onSurface)),
+                size: buttonSize * .8, color: colorScheme.onSurface)),
       ],
     );
   }

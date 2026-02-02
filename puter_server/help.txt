@@ -1,0 +1,17 @@
+# load environment
+source venv/bin/activate
+
+# run server
+uvicorn main:app --host 0.0.0.0 --port 8080 --reload
+
+
+# get server health
+curl http://localhost:8080/health
+
+# list devices
+curl http://localhost:8080/arduino/devices
+
+# send command
+curl -X POST http://localhost:8080/arduino/<Device Name>/cmd \
+  -H "Content-Type: application/json" \
+  -d '{"cmd":"","data":{}}'

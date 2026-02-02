@@ -1,0 +1,4 @@
+# Paste these into terminal to link libraries to Arduino IDE
+
+ln -s ~/Documents/GitHub/PUTER/puter_firmware/arduino/libraries/<Library Name> \
+      ~/Arduino/libraries/<Library Name>

@@ -1,6 +1,9 @@
 import 'dart:ui' show AppExitResponse;
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:puter_interface/system/kiosk.dart';
 import 'package:puter_interface/system/music/music_player.dart';
+import 'package:window_manager/window_manager.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
@@ -41,5 +44,16 @@ class _ExitCleanupState extends State<AppShell> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) => Focus(
+      autofocus: true,
+      onKeyEvent: (_, event) {
+        if (event is KeyDownEvent &&
+            event.logicalKey == LogicalKeyboardKey.f11) {
+              KioskManager.toggleFullScreen();
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+      child: widget.child,
+    );
 }

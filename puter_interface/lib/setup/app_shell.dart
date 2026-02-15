@@ -1,58 +1,54 @@
-import 'dart:ui' show AppExitResponse;
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:puter_interface/system/kiosk.dart';
+import 'package:window_manager/window_manager.dart';
 import 'package:puter_interface/system/music/music_player.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;
-
-  const AppShell({
-    super.key,
-    required this.child,
-  });
+  const AppShell({super.key, required this.child});
 
   @override
-  State<AppShell> createState() => _ExitCleanupState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _ExitCleanupState extends State<AppShell> with WidgetsBindingObserver {
-  bool _ran = false;
+class _AppShellState extends State<AppShell> with WindowListener {
+  bool _cleaningUp = false;
+  bool _cleanupDone = false;
+
+  Future<void> _cleanupOnce() async {
+    if (_cleanupDone || _cleaningUp) return;
+    _cleaningUp = true;
+
+    try {
+      await MusicPlayer.stopSpotifyd();
+    } catch (_) {}
+
+    _cleanupDone = true;
+    _cleaningUp = false;
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    windowManager.addListener(this);
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
+    windowManager.removeListener(this);
     super.dispose();
   }
 
   @override
-  Future<AppExitResponse> didRequestAppExit() async {
-    if (!_ran) {
-      _ran = true;
-      try {
-        await MusicPlayer.stopSpotifyd();
-      } catch (_) {}
-    }
-    return AppExitResponse.exit;
+  Future<void> onWindowClose() async {
+
+    if (_cleaningUp) return;
+
+    await _cleanupOnce();
+
+    await windowManager.setPreventClose(false);
+    await windowManager.close();
   }
 
   @override
-  Widget build(BuildContext context) => Focus(
-      autofocus: true,
-      onKeyEvent: (_, event) {
-        if (event is KeyDownEvent &&
-            event.logicalKey == LogicalKeyboardKey.f11) {
-              KioskManager.toggleFullScreen();
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-      child: widget.child,
-    );
+  Widget build(BuildContext context) => widget.child;
 }

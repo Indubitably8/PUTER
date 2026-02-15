@@ -153,161 +153,163 @@ class _MusicPageState extends State<MusicPage> {
   }
 
   Future<void> _showAddProfilePopup() async {
-  final TextEditingController fileCtrl = TextEditingController();
+    final TextEditingController fileCtrl = TextEditingController();
 
-  await showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (dialogContext) {
-      bool isCreating = false;
-      bool cancelRequested = false;
-      String? errorText;
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        bool isCreating = false;
+        bool cancelRequested = false;
+        String? errorText;
 
-      CancelToken? token;
-      Future<void>? createFuture;
+        CancelToken? token;
+        Future<void>? createFuture;
 
-      void safeSetDialog(StateSetter setDialogState, VoidCallback fn) {
-        if (!dialogContext.mounted) return;
-        setDialogState(fn);
-      }
+        void safeSetDialog(StateSetter setDialogState, VoidCallback fn) {
+          if (!dialogContext.mounted) return;
+          setDialogState(fn);
+        }
 
-      Future<void> handleCreate(StateSetter setDialogState) async {
-        if (isCreating) return;
+        Future<void> handleCreate(StateSetter setDialogState) async {
+          if (isCreating) return;
 
-        final String name = fileCtrl.text.trim();
-        if (name.isEmpty) return;
+          final String name = fileCtrl.text.trim();
+          if (name.isEmpty) return;
 
-        final String fileName = name.endsWith(".conf") ? name : "$name.conf";
+          final String fileName = name.endsWith(".conf") ? name : "$name.conf";
 
-        safeSetDialog(setDialogState, () {
-          isCreating = true;
-          cancelRequested = false;
-          errorText = null;
-          token = CancelToken();
-        });
-
-        createFuture = () async {
-          await MusicPlayer.createSpotifydProfile(
-            profileName: fileName,
-            cancelToken: token,
-          );
-          await MusicPlayer.listSpotifydProfiles();
-        }();
-
-        try {
-          await createFuture;
-
-          if (mounted) setState(() {});
-          if (dialogContext.mounted) Navigator.pop(dialogContext);
-        } on OperationCancelled {
-          // Cancel was requested; close from here (NOT from the Cancel button handler)
-          if (dialogContext.mounted) Navigator.pop(dialogContext);
-        } catch (e) {
           safeSetDialog(setDialogState, () {
-            isCreating = false;
+            isCreating = true;
             cancelRequested = false;
-            token = null;
-            createFuture = null;
-            errorText = "Failed to create profile.\n$e";
+            errorText = null;
+            token = CancelToken();
           });
+
+          createFuture = () async {
+            await MusicPlayer.createSpotifydProfile(
+              profileName: fileName,
+              cancelToken: token,
+            );
+            await MusicPlayer.listSpotifydProfiles();
+          }();
+
+          try {
+            await createFuture;
+
+            if (mounted) setState(() {});
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          } on OperationCancelled {
+            // Cancel was requested; close from here (NOT from the Cancel button handler)
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          } catch (e) {
+            safeSetDialog(setDialogState, () {
+              isCreating = false;
+              cancelRequested = false;
+              token = null;
+              createFuture = null;
+              errorText = "Failed to create profile.\n$e";
+            });
+          }
         }
-      }
 
-      void handleCancel(StateSetter setDialogState) {
-        // Only exit path. If not creating, just close.
-        if (!isCreating) {
-          Navigator.pop(dialogContext);
-          return;
+        void handleCancel(StateSetter setDialogState) {
+          if (!isCreating) {
+            Navigator.pop(dialogContext);
+            return;
+          }
+
+          if (cancelRequested) return;
+
+          safeSetDialog(setDialogState, () {
+            cancelRequested = true;
+            errorText = null;
+          });
+
+          token?.cancel();
         }
 
-        // If creating: request cancel but DO NOT pop the dialog here.
-        if (cancelRequested) return;
-
-        safeSetDialog(setDialogState, () {
-          cancelRequested = true;
-          errorText = null;
-        });
-
-        token?.cancel();
-        // Do NOT await or pop here—avoid race with handleCreate.
-      }
-
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          return PopScope(
-            canPop: false, // no back/escape
-            child: AlertDialog(
-              title: Text(
-                "New Profile",
-                style: TextStyle(fontFamily: "Orbitron", fontSize: titleTextSize),
-              ),
-              content: SizedBox(
-                width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: fileCtrl,
-                      enabled: !isCreating, // lock editing once started
-                      style: TextStyle(fontFamily: "Cousine", fontSize: bodyTextSize),
-                      decoration: InputDecoration(
-                        labelText: "Name",
-                        labelStyle: TextStyle(fontFamily: "Cousine", fontSize: bodyTextSize),
-                        errorText: errorText,
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return PopScope(
+              canPop: false,
+              child: AlertDialog(
+                title: Text(
+                  "New Profile",
+                  style: TextStyle(
+                      fontFamily: "Orbitron", fontSize: titleTextSize),
+                ),
+                content: SizedBox(
+                  width: 420,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: fileCtrl,
+                        enabled: !isCreating,
+                        style: TextStyle(
+                            fontFamily: "Cousine", fontSize: bodyTextSize),
+                        decoration: InputDecoration(
+                          labelText: "Name",
+                          labelStyle: TextStyle(
+                              fontFamily: "Cousine", fontSize: bodyTextSize),
+                          errorText: errorText,
+                        ),
+                        onSubmitted: (_) async => handleCreate(setDialogState),
                       ),
-                      onSubmitted: (_) async => handleCreate(setDialogState),
-                    ),
-                    if (isCreating) ...[
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            cancelRequested ? "Cancelling…" : "Creating…",
-                            style: TextStyle(fontFamily: "Cousine", fontSize: bodyTextSize),
-                          ),
-                        ],
-                      ),
+                      if (isCreating) ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              cancelRequested ? "Cancelling…" : "Creating…",
+                              style: TextStyle(
+                                  fontFamily: "Cousine",
+                                  fontSize: bodyTextSize),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
+                actions: [
+                  TextButton(
+                    onPressed: () => handleCancel(setDialogState),
+                    child: Text(
+                      "Cancel",
+                      style: TextStyle(
+                        fontFamily: "Cousine",
+                        fontWeight: FontWeight.w600,
+                        fontSize: bodyTextSize,
+                      ),
+                    ),
+                  ),
+                  FilledButton(
+                    onPressed: (isCreating)
+                        ? null
+                        : () async => handleCreate(setDialogState),
+                    child: Text(
+                      "Create",
+                      style: TextStyle(
+                        fontFamily: "Cousine",
+                        fontWeight: FontWeight.w600,
+                        fontSize: bodyTextSize,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  // Cancel always available; during create it triggers cancel request
-                  onPressed: () => handleCancel(setDialogState),
-                  child: Text(
-                    "Cancel",
-                    style: TextStyle(
-                      fontFamily: "Cousine",
-                      fontWeight: FontWeight.w600,
-                      fontSize: bodyTextSize,
-                    ),
-                  ),
-                ),
-                FilledButton(
-                  onPressed: (isCreating) ? null : () async => handleCreate(setDialogState),
-                  child: Text(
-                    "Create",
-                    style: TextStyle(
-                      fontFamily: "Cousine",
-                      fontWeight: FontWeight.w600,
-                      fontSize: bodyTextSize,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      );
-    },
-  );
-}
-
+            );
+          },
+        );
+      },
+    );
+  }
 }

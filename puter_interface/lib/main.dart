@@ -4,9 +4,11 @@ import 'package:puter_interface/setup/app_init_gate.dart';
 import 'package:puter_interface/system/kiosk.dart';
 import 'package:puter_interface/system/music/music_player.dart';
 import 'package:puter_interface/setup/themes/dark_blue.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  KioskHotkeys.install();
   runApp(const MyApp());
 }
 
@@ -28,5 +30,6 @@ Future<void> init() async {
   MusicPlayer.initSpotifyd();
 
   await initLocalStorage();
-  await KioskManager.initialize();
+  await KioskManager.init();
+  await windowManager.setPreventClose(true); // IMPORTANT
 }

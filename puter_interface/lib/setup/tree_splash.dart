@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
 class TreeSplash extends StatefulWidget {
   static const Color startColor = Color(0xff882222);
-  static const Point<int> startPoint = Point(0, 0);
+  static const math.Point<int> startPoint = math.Point(0, 0);
   static const int minStartNodes = 5;
   static const int maxStartNodes = 10;
 
@@ -19,8 +19,8 @@ class TreeSplash extends StatefulWidget {
   static const int minBranchRadius = 10;
   static const int maxBranchRadius = 50;
 
-  static const double minTheta = -pi * 3 / 8;
-  static const double maxTheta = pi * 3 / 8;
+  static const double minTheta = -math.pi * 3 / 8;
+  static const double maxTheta = math.pi * 3 / 8;
 
   static const double branchWidth = 5;
   static const double branchPointSize = 2.5;
@@ -42,7 +42,7 @@ class TreeSplash extends StatefulWidget {
 
 class _TreeSplashState extends State<TreeSplash> {
   late final TreePoint root;
-  final Random rng = Random();
+  final math.Random rng = math.Random();
 
   final ValueNotifier<int> _repaint = ValueNotifier<int>(0);
 
@@ -220,12 +220,12 @@ class _TreePainter extends CustomPainter {
 }
 
 class TreePoint {
-  static final Random rng = Random();
+  static final math.Random rng = math.Random();
 
   TreePoint({required this.color, required this.point});
 
   final Color color;
-  final Point<int> point;
+  final math.Point<int> point;
   final List<TreePoint> children = [];
 
   void generateTree() {
@@ -239,13 +239,13 @@ class TreePoint {
       final double green = _color(color.g);
       final double blue = _color(color.b);
 
-      final double theta = _random(-pi, pi);
+      final double theta = _random(-math.pi, math.pi);
       final double radius =
           _random(TreeSplash.minBranchRadius, TreeSplash.maxBranchRadius);
 
       final Color c = Color.from(alpha: 1, red: red, green: green, blue: blue);
-      final Point<int> p = Point((point.x + radius * cos(theta)).round(),
-          (point.y + radius * sin(theta)).round());
+      final math.Point<int> p = math.Point((point.x + radius * math.cos(theta)).round(),
+          (point.y + radius * math.sin(theta)).round());
 
       children.add(TreePoint(color: c, point: p)..generateBranch(branches - 1));
     }
@@ -260,15 +260,15 @@ class TreePoint {
         final double green = _color(color.g);
         final double blue = _color(color.b);
 
-        final double theta = atan2(point.y, point.x) +
+        final double theta = math.atan2(point.y, point.x) +
             _random(TreeSplash.minTheta, TreeSplash.maxTheta);
         final double radius =
             _random(TreeSplash.minBranchRadius, TreeSplash.maxBranchRadius);
 
         final Color c =
             Color.from(alpha: 1, red: red, green: green, blue: blue);
-        final Point<int> p = Point((point.x + radius * cos(theta)).round(),
-            (point.y + radius * sin(theta)).round());
+        final math.Point<int> p = math.Point((point.x + radius * math.cos(theta)).round(),
+            (point.y + radius * math.sin(theta)).round());
 
         children
             .add(TreePoint(color: c, point: p)..generateBranch(branches - 1));
@@ -276,9 +276,9 @@ class TreePoint {
     }
   }
 
-  static double _color(double v) => max(
+  static double _color(double v) => math.max(
       0,
-      min(v + _random(TreeSplash.minColorChange, TreeSplash.maxColorChange),
+      math.min(v + _random(TreeSplash.minColorChange, TreeSplash.maxColorChange),
           1));
 
   static double _random(num min, num max) =>

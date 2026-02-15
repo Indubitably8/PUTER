@@ -92,11 +92,6 @@ class SerialManager:
         self.device_info: Dict[str, DeviceInfo] = {}
 
     async def _probe_fw(self, device_id: str, timeout: float = 1.0) -> Optional[str]:
-        """
-        Calls Arduino "info" and extracts firmware string from response.
-        Matches your PuterSerialDevice "info" response:
-          {"ok":true,"data":{"id":...,"fw":...,"baud":...}}
-        """
         dev = self.devices.get(device_id)
         if not dev:
             return None
@@ -132,9 +127,6 @@ class SerialManager:
         return list(self.device_info.values())
 
     async def rescan(self):
-        """
-        Reopen all registered devices and refresh fw via "info".
-        """
         for dev_id, dev in self.devices.items():
             info = self.device_info.get(dev_id)
             try:

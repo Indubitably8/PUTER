@@ -1,7 +1,7 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:puter_interface/extensions/color_extension.dart';
+import 'package:puter_interface/extenions.dart';
 
 class ColorPicker extends StatefulWidget {
   final Color selected;
@@ -176,7 +176,7 @@ class _ColorPickerState extends State<ColorPicker> {
                   Positioned.fill(
                     child: CustomPaint(
                       painter: _HexOutlinePainter(
-                        stroke: max(2.0, size * 0.16), // scales with radius
+                        stroke: math.max(2.0, size * 0.16), // scales with radius
                         color: outer,
                       ),
                     ),
@@ -184,9 +184,9 @@ class _ColorPickerState extends State<ColorPicker> {
                   Positioned.fill(
                     child: CustomPaint(
                       painter: _HexOutlinePainter(
-                        stroke: max(1.2, size * 0.09),
+                        stroke: math.max(1.2, size * 0.09),
                         color: inner,
-                        inset: max(2.0, size * 0.12),
+                        inset: math.max(2.0, size * 0.12),
                       ),
                     ),
                   ),

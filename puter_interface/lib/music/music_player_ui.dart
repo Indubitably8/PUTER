@@ -1,8 +1,8 @@
-import 'dart:math';
+import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:puter_interface/extensions/duration_extension.dart';
+import 'package:puter_interface/extenions.dart';
 import 'package:puter_interface/system/music/music_player.dart';
 import 'package:puter_interface/system/music/playerctl_stream.dart';
 import 'package:puter_interface/system/music/position_ticker.dart';
@@ -45,7 +45,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   Widget build(BuildContext context) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height) + 176;
+        math.min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height) + 176;
 
     return StreamBuilder<NowPlaying?>(
       stream: _player.npStream,
@@ -74,7 +74,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
+    math.min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
 
     return Container(
         decoration: BoxDecoration(
@@ -122,7 +122,7 @@ class _MusicPlayerUIState extends State<MusicPlayerUI> {
   Widget _albumCover(NowPlaying np) {
     final MediaQueryData mediaQuery = MediaQuery.of(context);
     final double size =
-        min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
+    math.min(mediaQuery.size.width * albumratio.width, mediaQuery.size.height * albumratio.height);
 
     return Padding(
       padding: const EdgeInsets.all(16),

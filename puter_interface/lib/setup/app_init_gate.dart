@@ -15,8 +15,9 @@ class AppInitGate extends StatefulWidget {
 class _AppInitGateState extends State<AppInitGate>
     with SingleTickerProviderStateMixin {
   static const Duration minSplashTime = Duration(milliseconds: 2500);
-  static const double splashEnd = 0.40;
-  static const double homeStart = 0.50;
+  static const double splashEnd = 0.50;
+  static const double homeStart = 0.55;
+  static const double splashEndSize = 0.0001;
 
   late final Widget _splash = const TreeSplash();
   late final Widget _home = const HomePage();
@@ -27,7 +28,7 @@ class _AppInitGateState extends State<AppInitGate>
   );
 
   late final Animation<double> _splashScale =
-  Tween<double>(begin: 1.0, end: 0.005).animate(
+      Tween<double>(begin: 1.0, end: splashEndSize).animate(
     CurvedAnimation(
       parent: _c,
       curve: const Interval(0.0, splashEnd, curve: Curves.easeInBack),
@@ -35,7 +36,7 @@ class _AppInitGateState extends State<AppInitGate>
   );
 
   late final Animation<double> _homeScale =
-  Tween<double>(begin: 12.0, end: 1.0).animate(
+      Tween<double>(begin: 12.0, end: 1.0).animate(
     CurvedAnimation(
       parent: _c,
       curve: const Interval(homeStart, 1.0, curve: Curves.easeOutCubic),
@@ -45,7 +46,7 @@ class _AppInitGateState extends State<AppInitGate>
   static const double _homeFadeStart = homeStart + 0.05;
 
   late final Animation<double> _homeFade =
-  Tween<double>(begin: 0.0, end: 1.0).animate(
+      Tween<double>(begin: 0.0, end: 1.0).animate(
     CurvedAnimation(
       parent: _c,
       curve: const Interval(_homeFadeStart, 1.0, curve: Curves.easeOut),
@@ -70,7 +71,7 @@ class _AppInitGateState extends State<AppInitGate>
     }
     if (!mounted) return;
 
-    final Duration remaining = minSplashTime - sw.elapsed;
+    final remaining = minSplashTime - sw.elapsed;
     if (remaining > Duration.zero) {
       await Future<void>.delayed(remaining);
     }
@@ -92,7 +93,8 @@ class _AppInitGateState extends State<AppInitGate>
       child: AnimatedBuilder(
         animation: _c,
         builder: (context, _) {
-          final showSplash = !_ready || _c.value < splashEnd;
+          final showSplash = !_ready || _c.value < homeStart;
+
           final allowHomeInput = _ready && _c.value >= _homeFadeStart;
 
           return Stack(
@@ -109,7 +111,6 @@ class _AppInitGateState extends State<AppInitGate>
                     ),
                   ),
                 ),
-
               if (showSplash)
                 Transform.scale(
                   scale: _splashScale.value,

@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:puter_interface/system/kiosk.dart';
 import 'package:puter_interface/system/music/music_player.dart';
-import 'package:window_manager/window_manager.dart';
 
 class AppShell extends StatefulWidget {
   final Widget child;

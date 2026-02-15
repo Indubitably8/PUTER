@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:localstorage/localstorage.dart';
-import 'package:puter_interface/setup/app_shell.dart';
-import 'package:puter_interface/setup/home_page.dart';
 import 'package:puter_interface/setup/app_init_gate.dart';
 import 'package:puter_interface/system/kiosk.dart';
 import 'package:puter_interface/system/music/music_player.dart';

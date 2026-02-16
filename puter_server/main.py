@@ -1,8 +1,8 @@
-import os
-import signal
 import asyncio
+import subprocess
 from contextlib import asynccontextmanager
 
+from fastapi import APIRouter
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -88,8 +88,7 @@ async def cmd(device_id: str, req: CmdRequest):
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
 
-
 @app.post("/shutdown")
 async def shutdown():
-    os.kill(os.getpid(), signal.SIGTERM)
+    subprocess.Popen(["sudo", "systemctl", "stop", "puter-api.service"])
     return {"ok": True}

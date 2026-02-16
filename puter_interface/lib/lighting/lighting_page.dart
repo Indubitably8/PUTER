@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:puter_interface/lighting/color_picker.dart';
+import 'package:puter_interface/system/arduino/controllers/light_controller.dart';
 
 class LightingPage extends StatefulWidget {
   const LightingPage({super.key});
@@ -63,7 +64,10 @@ class _LightingPageState extends State<LightingPage> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
-                        onChanged: (v) => setState(() => panelBrightness = v),
+                        onChanged: (v) {
+                          LightController.setCCTLight(t: panelWarmth, v: v);
+                          setState(() => panelBrightness = v);
+                        },
                       ),
                       _verticalSlider(
                         label: "Warmth",
@@ -77,7 +81,10 @@ class _LightingPageState extends State<LightingPage> {
                           begin: Alignment.centerLeft,
                           end: Alignment.centerRight,
                         ),
-                        onChanged: (v) => setState(() => panelWarmth = v),
+                        onChanged: (v) {
+                          LightController.setCCTLight(t: v, v: panelBrightness);
+                          setState(() => panelWarmth = v);
+                        },
                       ),
                     ],
                   ),
@@ -110,14 +117,19 @@ class _LightingPageState extends State<LightingPage> {
                             begin: Alignment.centerLeft,
                             end: Alignment.centerRight,
                           ),
-                          onChanged: (v) =>
-                              setState(() => backlightBrightness = v),
+                          onChanged: (v) {
+                            LightController.setRGBLight(
+                                color: backlightColor, v: v);
+                            setState(() => backlightBrightness = v);
+                          },
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: ColorPicker(
                             selected: backlightColor,
                             onChanged: (picked) {
+                              LightController.setRGBLight(
+                                  color: picked, v: backlightBrightness);
                               setState(() => backlightColor = picked);
                             },
                           ),
@@ -166,7 +178,10 @@ class _LightingPageState extends State<LightingPage> {
         const SizedBox(height: 8),
         Text(label,
             textAlign: TextAlign.center,
-            style: TextStyle(fontFamily: "Cousine", fontSize: buttonTextSize, fontWeight: FontWeight.w600)),
+            style: TextStyle(
+                fontFamily: "Cousine",
+                fontSize: buttonTextSize,
+                fontWeight: FontWeight.w600)),
       ],
     );
   }

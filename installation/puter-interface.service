@@ -1,0 +1,15 @@
+[Unit]
+Description=PUTER Interface
+After=graphical-session.target
+Wants=graphical-session.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/puter/interface
+ExecStart=/opt/puter/interface/puter_interface
+Restart=on-failure
+RestartSec=2
+Environment=HOME=%h
+
+[Install]
+WantedBy=default.target

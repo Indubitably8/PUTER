@@ -24,7 +24,6 @@ class SerialDevice:
 
         self._ser = serial.Serial(port, baudrate=baud, timeout=0.2)
 
-        # Arduino often resets on open
         time.sleep(1.8)
         try:
             self._ser.reset_input_buffer()
@@ -91,6 +90,10 @@ class SerialManager:
         self.devices: Dict[str, SerialDevice] = {}
         self.device_info: Dict[str, DeviceInfo] = {}
 
+        self._connect_tasks: Dict[str, asyncio.Task] = {}
+        self._lock = asyncio.Lock()
+        self._scan_lock = asyncio.Lock()
+
     async def _probe_fw(self, device_id: str, timeout: float = 1.0) -> Optional[str]:
         dev = self.devices.get(device_id)
         if not dev:
@@ -108,49 +111,113 @@ class SerialManager:
         return None
 
     async def add_device(self, device_id: str, port: str, baud: int = 115200):
-        self.remove_device(device_id)
+        await self.remove_device(device_id)
 
-        dev = SerialDevice(device_id, port, baud)
-        self.devices[device_id] = dev
-        self.device_info[device_id] = DeviceInfo(id=device_id, port=port, online=True, baud=baud)
+        self.device_info[device_id] = DeviceInfo(
+            id=device_id,
+            port=port,
+            baud=baud,
+            online=False,
+            fw=None,
+        )
 
-        fw = await self._probe_fw(device_id)
-        self.device_info[device_id].fw = fw
+        self._start_connect(device_id)
 
-    def remove_device(self, device_id: str):
-        old = self.devices.pop(device_id, None)
-        if old:
-            old.close()
+    async def remove_device(self, device_id: str):
+        t = self._connect_tasks.pop(device_id, None)
+        if t and not t.done():
+            t.cancel()
+
+        async with self._lock:
+            dev = self.devices.pop(device_id, None)
+
+        if dev:
+            dev.close()
+
         self.device_info.pop(device_id, None)
 
     def list_devices(self):
         return list(self.device_info.values())
 
-    async def rescan(self):
-        for dev_id, dev in self.devices.items():
-            info = self.device_info.get(dev_id)
-            try:
-                dev.reopen()
-                if info:
-                    info.online = True
-                    info.fw = await self._probe_fw(dev_id)
-            except Exception:
-                if info:
+    def _start_connect(self, device_id: str):
+        t = self._connect_tasks.get(device_id)
+        if t and not t.done():
+            return
+        self._connect_tasks[device_id] = asyncio.create_task(self._connect(device_id))
+
+    async def _connect(self, device_id: str):
+        info = self.device_info.get(device_id)
+        if not info:
+            return
+
+        async with self._lock:
+            if device_id in self.devices:
+                return
+
+        try:
+            dev = await asyncio.to_thread(SerialDevice, info.id, info.port, info.baud)
+        except Exception:
+            info.online = False
+            info.fw = None
+            return
+
+        async with self._lock:
+            if device_id not in self.device_info:
+                dev.close()
+                return
+            self.devices[device_id] = dev
+
+        fw = await self._probe_fw(device_id, timeout=1.0)
+        if fw is None:
+            async with self._lock:
+                dead = self.devices.pop(device_id, None)
+            if dead:
+                dead.close()
+            info.online = False
+            info.fw = None
+            return
+
+        info.online = True
+        info.fw = fw
+
+    async def scan(self):
+        if self._scan_lock.locked():
+            return
+
+        async with self._scan_lock:
+            for device_id, info in list(self.device_info.items()):
+                async with self._lock:
+                    dev = self.devices.get(device_id)
+
+                if dev is None:
                     info.online = False
                     info.fw = None
+                    self._start_connect(device_id)
+                    continue
+
+                try:
+                    fw = await self._probe_fw(device_id)
+
+                    if fw is None:
+                        raise RuntimeError("Probe failed")
+
+                    info.online = True
+                    info.fw = fw
+
+                except Exception:
+                    info.online = False
+                    info.fw = None
+
+                    async with self._lock:
+                        dead = self.devices.pop(device_id, None)
+                    if dead:
+                        dead.close()
 
     async def send(self, device_id: str, cmd: str, data: Dict[str, Any]) -> Dict[str, Any]:
         dev = self.devices.get(device_id)
         if not dev:
-            raise KeyError(f"Unknown device: {device_id}")
-
-        info = self.device_info.get(device_id)
-        if info and not info.online:
-            try:
-                dev.reopen()
-                info.online = True
-                info.fw = await self._probe_fw(device_id)
-            except Exception:
-                pass
+            if device_id in self.device_info:
+                self._start_connect(device_id)
+            raise KeyError(f"Device not connected: {device_id}")
 
         return await dev.request(cmd, data)

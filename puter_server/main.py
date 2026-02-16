@@ -1,3 +1,6 @@
+import os
+import signal
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
@@ -8,9 +11,22 @@ from serial_manager import SerialManager
 
 mgr = SerialManager()
 
+_scan_task: asyncio.Task | None = None
+
+
+async def _scan_loop():
+    while True:
+        try:
+            await mgr.scan()
+        except Exception:
+            pass
+        await asyncio.sleep(5)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _scan_task
+
     # Startup
     try:
         await mgr.add_device("light_controller", "/dev/ttyUSB0", baud=115200)
@@ -18,11 +34,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"WARNING: Failed to init serial device: {e}")
 
-    yield
+    _scan_task = asyncio.create_task(_scan_loop())
 
-    # Shutdown
-    for dev_id in list(mgr.devices.keys()):
-        mgr.remove_device(dev_id)
+    yield
+    if _scan_task and not _scan_task.done():
+        _scan_task.cancel()
+        try:
+            await _scan_task
+        except asyncio.CancelledError:
+            pass
+
+    for dev_id in list(mgr.device_info.keys()):
+        await mgr.remove_device(dev_id)
+
     print("Serial devices closed")
 
 
@@ -39,10 +63,11 @@ def devices():
     return {"ok": True, "devices": [d.__dict__ for d in mgr.list_devices()]}
 
 
-@app.post("/arduino/rescan")
-def rescan():
+# Manual trigger (optional)
+@app.post("/arduino/scan")
+async def scan():
     try:
-        mgr.rescan()
+        await mgr.scan()
         return {"ok": True, "devices": [d.__dict__ for d in mgr.list_devices()]}
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
@@ -62,3 +87,9 @@ async def cmd(device_id: str, req: CmdRequest):
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"ok": False, "error": str(e)})
+
+
+@app.post("/shutdown")
+async def shutdown():
+    os.kill(os.getpid(), signal.SIGTERM)
+    return {"ok": True}
